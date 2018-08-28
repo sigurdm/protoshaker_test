@@ -4,13 +4,22 @@ DUMP_KERNEL=${DART_SDK}/pkg/vm/bin/dump_kernel.dart
 TRANSFORM=${DART_SDK}/pkg/kernel/bin/transform.dart
 VM_PLATFORM=${DART_SDK}/tools/sdks/dart-sdk/lib/_internal/vm_platform_strong.dill
 
+.packages: pubspec.yaml
+	pub get
+
 lib/protos/protos.pb.dart: protos/protos.proto ../dart-protoc-plugin/**
 	protoc --dart_out=lib/ $< 
 
 out/main.dart.dill : bin/main.dart lib/protos/protos.pb.dart .packages
 	dart ${GEN_KERNEL} --packages=.packages  --platform=${VM_PLATFORM} --output=$@ $<
 
-%.transformed.dill : %.dill
+out:
+	mkdir out
+
+%.mixin.dill : %.dill
+	dart ${TRANSFORM} -f bin -t resolve-mixins -o $@ $<
+
+%.mixin.treeshaken.dill : %.mixin.dill
 	dart ${TRANSFORM} -f bin -t treeshake -o $@ $<
 
 %.dill.txt : %.dill
